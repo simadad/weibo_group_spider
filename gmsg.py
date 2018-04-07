@@ -71,7 +71,7 @@ def analyze_msg(msg: dict):
     return content, username, time_fm, media_type, fids
 
 
-def save_text_msg(content, time_fm, username):
+def save_text_msg(content, time_fm, username: str):
     # TODO 调整数据记录顺序
     time_fm_month = time_fm[:5]
     # dir_text = '{dir_data}/text'.format(dir_data=dir_data)
@@ -79,10 +79,11 @@ def save_text_msg(content, time_fm, username):
     dir_month, is_new = get_or_create_dir(dirs.text, time_fm_month)
     path_detail = '{dir}/{username}.txt'.format(dir=dir_month, username=username)
     with open(path_detail, 'a') as f:
-        line = '{time}:\t{data}'.format(time=time_fm, data=content)
+        line = '{time}: {data}\n'.format(time=time_fm, data=content)
         f.write(line)
     with open(path_gather, 'a') as f:
-        line = '{time} {username:<10}: {data}'.format(time=time_fm, data=content, username=username)
+        username_fm = username.ljust(20 - len(re.findall(u"[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]", username)))
+        line = '{time} {username}: {data}\n'.format(time=time_fm, data=content, username=username_fm)
         f.write(line)
 
 
@@ -90,7 +91,7 @@ def save_image_msg(data, time_fm, username):
     time_fm_month = time_fm[:5]
     dir_month, is_new = get_or_create_dir(dirs.image, time_fm_month)
     dir_user, is_new = get_or_create_dir(dir_month, username)
-    path = '{dir}/{time_fm}.gif'.format(dir=dir_user, time_fm=time_fm)
+    path = '{dir}/{time_fm}.jpg'.format(dir=dir_user, time_fm=time_fm)
     if os.path.exists(path):
         path = '{path}-{time}'.format(path=path, time=str(time.time())[-6:])
     with open(path, 'wb') as f:
@@ -112,12 +113,19 @@ def save_file_msg(data, time_fm, username, content: str):
     time_fm_month = time_fm[:5]
     dir_month, is_new = get_or_create_dir(dirs.file, time_fm_month)
     dir_user, is_new = get_or_create_dir(dir_month, username)
-    file_name = content[content.index(']') + 1:]
-    path = '{dir}/{time_fm}-{file}'.format(dir=dir_user, time_fm=time_fm, file=file_name)
+    # file_name = lambda x: x[x.find(']') + 1:] if re.search(r'\.\w+', x) else '{}.jpg'.format(x[x.find(']') + 1:])
+    path = '{dir}/{time_fm}-{file}'.format(dir=dir_user, time_fm=time_fm, file=comp_file_name(content))
     if os.path.exists(path):
         path = '{path}-{time}'.format(path=path, time=str(time.time())[-6:])
     with open(path, 'wb') as f:
         f.write(data)
+
+
+def comp_file_name(content: str):
+    name = content[content.find(']') + 1:]
+    if not re.search(r'\.\w+', content):
+        name = '{}.jpg'.format(name)
+    return name
 
 
 def router():
@@ -136,4 +144,5 @@ def router():
 
 
 if __name__ == '__main__':
+    dirs = None
     router()
